@@ -1,0 +1,5 @@
+Flask==3.0.3
+PyJWT==2.8.0
+azure-storage-blob==12.27.0
+azure-identity==1.17.1
+Werkzeug==3.0.3

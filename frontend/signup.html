@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign up</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+    .card { background:#fff; width:360px; padding:28px; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.08); }
+    h1 { margin-top:0; }
+    input { width:100%; padding:12px; margin:8px 0; box-sizing:border-box; }
+    button { width:100%; padding:12px; margin-top:12px; border:0; border-radius:8px; cursor:pointer; background:#2563eb; color:#fff; }
+    .error { color:#b91c1c; margin-top:12px; }
+    .ok { color:#166534; margin-top:12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sign up</h1>
+    <input id="username" placeholder="Username" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="new-password">
+    <button onclick="signup()">Create account</button>
+    <div style="margin-top:16px; text-align:center;">
+      Already have an account? <a href="/login.html">Login</a>
+    </div>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    async function signup() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('message');
+      msg.className = '';
+      msg.textContent = '';
+
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        msg.className = 'error';
+        msg.textContent = data.error || 'Signup failed';
+        return;
+      }
+
+      msg.className = 'ok';
+      msg.textContent = 'Account created successfully. Redirecting to login...';
+      setTimeout(() => { window.location.href = '/login.html'; }, 1200);
+    }
+  </script>
+</body>
+</html>

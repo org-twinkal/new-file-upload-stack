@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload files</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; }
+    .wrap { max-width:960px; margin:30px auto; background:#fff; border-radius:12px; padding:24px; box-shadow:0 6px 24px rgba(0,0,0,.08); }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+    .card { border:1px solid #e5e7eb; border-radius:10px; padding:16px; margin-top:20px; }
+    button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; background:#2563eb; color:#fff; }
+    .muted-btn { background:#6b7280; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid #eee; }
+    .status { margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1 style="margin:0;">Upload files</h1>
+        <div id="welcome"></div>
+      </div>
+      <button class="muted-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="card">
+      <h2>Select file</h2>
+      <input type="file" id="fileInput">
+      <button onclick="uploadFile()">Upload</button>
+      <div id="uploadStatus" class="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>Available files</h2>
+      <button onclick="loadFiles()">Refresh</button>
+      <table>
+        <thead>
+          <tr>
+            <th>File name</th>
+            <th>Size (bytes)</th>
+            <th>Last modified</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="fileTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    if (!token) {
+      window.location.href = '/login.html';
+    }
+    document.getElementById('welcome').textContent = username ? `Logged in as ${username}` : '';
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      window.location.href = '/login.html';
+    }
+
+    async function uploadFile() {
+      const file = document.getElementById('fileInput').files[0];
+      const status = document.getElementById('uploadStatus');
+      status.textContent = '';
+
+      if (!file) {
+        status.textContent = 'Please select a file.';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        status.textContent = data.error || 'Upload failed';
+        if (res.status === 401) logout();
+        return;
+      }
+
+      status.textContent = `Uploaded: ${data.file_name}`;
+      document.getElementById('fileInput').value = '';
+      loadFiles();
+    }
+
+    async function loadFiles() {
+      const body = document.getElementById('fileTableBody');
+      body.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+      const res = await fetch('/api/files', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        body.innerHTML = `<tr><td colspan="4">${data.error || 'Failed to load files'}</td></tr>`;
+        if (res.status === 401) logout();
+        return;
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        body.innerHTML = '<tr><td colspan="4">No files found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = '';
+      data.forEach(file => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(file.name)}</td>
+          <td>${file.size ?? ''}</td>
+          <td>${file.last_modified ? new Date(file.last_modified).toLocaleString() : ''}</td>
+          <td><button onclick="downloadFile('${encodeURIComponent(file.name)}')">Download</button></td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    async function downloadFile(encodedName) {
+      const res = await fetch(`/api/download/${encodedName}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Download failed' }));
+        alert(data.error || 'Download failed');
+        if (res.status === 401) logout();
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename\*=UTF-8''(.+)$/);
+      a.href = url;
+      a.download = match ? decodeURIComponent(match[1]) : 'download';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    loadFiles();
+  </script>
+</body>
+</html>

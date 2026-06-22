@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+    .card { background:#fff; width:360px; padding:28px; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.08); }
+    h1 { margin-top:0; }
+    input { width:100%; padding:12px; margin:8px 0; box-sizing:border-box; }
+    button { width:100%; padding:12px; margin-top:12px; border:0; border-radius:8px; cursor:pointer; }
+    .primary { background:#2563eb; color:#fff; }
+    .secondary { background:#e5e7eb; color:#111827; }
+    .error { color:#b91c1c; margin-top:12px; }
+    .link { margin-top:16px; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Login</h1>
+    <input id="username" placeholder="Username" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="primary" onclick="login()">Login</button>
+    <div class="link">
+      No account? <a href="/signup.html">Sign up</a>
+    </div>
+    <div id="error" class="error"></div>
+  </div>
+
+  <script>
+    localStorage.removeItem('token');
+
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = '';
+
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        errorEl.textContent = data.error || 'Login failed';
+        return;
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username);
+      window.location.href = '/upload.html';
+    }
+  </script>
+</body>
+</html>
