@@ -24,3 +24,115 @@ This package contains:
 - Login page is the first page.
 - Signup is a separate page.
 - Upload/list/download page is shown only after successful login because the browser stores the JWT token and sends it as a `Bearer` token to protected routes.
+
+
+## ✅ ✅ Application Workflow & Architecture Diagram
+
+## Overview
+This document describes the full workflow of the JWT-based secure file upload system.
+
+---
+
+## 1. User Access Flow
+
+1. User opens application URL
+2. Request goes to NGINX (frontend gateway)
+3. NGINX serves login page
+
+---
+
+## 2. Authentication Flow (Login)
+
+Browser → NGINX → Auth Service → MongoDB
+
+- User submits username/password
+- Auth service validates credentials
+- If valid: JWT token is generated
+- Token returned to browser
+- Token stored in localStorage
+
+---
+
+## 3. JWT Usage
+
+- JWT is included as:
+
+Authorization: Bearer <token>
+
+- Used in all protected API calls
+
+---
+
+## 4. Upload Flow (Protected)
+
+Browser (JWT) → NGINX → Backend API → Azure Blob Storage
+
+- Token validated in backend
+- File uploaded to Blob Storage via private endpoint
+
+---
+
+## 5. List Files Flow
+
+Browser (JWT) → Backend API → Blob Storage → Response
+
+---
+
+## 6. Download Flow
+
+Browser (JWT) → Backend API → Blob → Stream → Browser
+
+---
+
+## 7. Logout Flow
+
+- JWT removed from browser
+- User redirected to login page
+
+---
+
+## Architecture Diagram
+
+                +------------------------+
+                |        Browser         |
+                |   (Login / Upload)     |
+                +-----------+------------+
+                            |
+                            v
+                +------------------------+
+                |         NGINX          |
+                | (Frontend + Routing)   |
+                +------+---------+-------+
+                       |         |
+                       v         v
+             +-------------+   +-------------+
+             | Auth Service|   | Backend API |
+             |  (Flask)    |   |  (Flask)    |
+             +------+------+
+                    |            |
+                    v            v
+             +-------------+   +------------------------+
+             |  MongoDB    |   | Azure Blob Storage     |
+             | (Users DB)  |   | (Private Endpoint)     |
+             +-------------+   +------------------------+
+
+---
+
+## Key Concepts
+
+- NGINX acts as reverse proxy
+- JWT provides stateless authentication
+- MongoDB stores user credentials securely (bcrypt hashed)
+- Azure Blob Storage is accessed privately
+
+---
+
+## Summary
+
+Flow:
+Login → JWT → Protected APIs → File Upload/Download
+
+This architecture ensures:
+- Security
+- Scalability
+- Clean separation of services
