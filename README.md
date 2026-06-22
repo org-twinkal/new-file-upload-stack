@@ -1,4 +1,4 @@
-# JWT file upload stack
+# file upload stack
 
 This package contains:
 - frontend static pages: `login.html`, `signup.html`, `upload.html`
@@ -13,7 +13,7 @@ This package contains:
    ```bash
    docker compose up --build -d
    ```
-3. Open `http://<your-vm-ip>/`
+3. Open `http://<your-url>/`
 
 ## Required Azure configuration
 - The VM must be able to reach the Azure Storage Account privately.
